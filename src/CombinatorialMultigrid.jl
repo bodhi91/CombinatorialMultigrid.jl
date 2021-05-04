@@ -1,5 +1,8 @@
-module CombinatorialMultigrid
+module cmg
+    using SparseArrays
+    using LinearAlgebra
+    using LDLFactorizations
 
-greet() = print("Hello World!")
-
-end # module
+    include("cmgAlg.jl")
+    export solve_cmg
+end
