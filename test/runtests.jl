@@ -1,6 +1,8 @@
 using Test; Laplacians; using MAT; using LinearAlgebra; using BenchmarkTools
 include("../src/CombinatorialMultigrid.jl");
 
+using CombinatorialMultigrid
+
 ## load microchip
 file = matopen("X.mat"); X = read(file, "X"); close(file)
 LX = lap(X);

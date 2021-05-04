@@ -1,4 +1,4 @@
-module cmg
+module CombinatorialMultigrid
     using SparseArrays
     using LinearAlgebra
     using LDLFactorizations
