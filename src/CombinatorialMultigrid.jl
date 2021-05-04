@@ -5,5 +5,5 @@ module CombinatorialMultigrid
     using Laplacians
 
     include("cmgAlg.jl")
-    export solve_cmg_Lap, solve_cmg_Adj
+    export cmg_preconditioner_adj, cmg_preconditioner_lap
 end

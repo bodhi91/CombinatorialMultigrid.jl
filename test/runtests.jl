@@ -1,14 +1,14 @@
-using Test; Laplacians; using MAT; using LinearAlgebra; using BenchmarkTools
+using Test; Laplacians; using LinearAlgebra; using BenchmarkTools
 include("../src/CombinatorialMultigrid.jl");
 
 using CombinatorialMultigrid
 
 ## load microchip
-file = matopen("X.mat"); X = read(file, "X"); close(file)
+X = wtedChimera(100_000)
 LX = lap(X);
 b1 = rand(Float64, size(X, 1));
 b1 = b1 .- sum(b1)/length(b1);
 
-@time (pfunc, h) = solve_cmg(LX);
+@time (pfunc, h) = cmg_preconditioner_lap(LX);
 x= pfunc(b1);
 @time x= pfunc(b1);

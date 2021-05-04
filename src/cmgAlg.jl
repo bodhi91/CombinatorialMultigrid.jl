@@ -105,11 +105,11 @@ end
 
 ##
 
-function solve_cmg_Lap(A::SparseMatrixCSC)
+function cmg_preconditioner_lap(A::SparseMatrixCSC)
     cmg_!(A, A)
 end
 
-function solve_cmg_Adj(A::SparseMatrixCSC)
+function cmg_preconditioner_adj(A::SparseMatrixCSC)
     msg = undef
     flag = undef
     A_lap = lap(A)
