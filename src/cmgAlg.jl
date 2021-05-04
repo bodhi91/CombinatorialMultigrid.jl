@@ -105,14 +105,19 @@ end
 
 ##
 
-function solve_cmg(A::SparseMatrixCSC)
+function solve_cmg_Lap(A::SparseMatrixCSC)
+    cmg_!(A, A)
+end
+
+function solve_cmg_Adj(A::SparseMatrixCSC)
     msg = undef
     flag = undef
+    A_lap = lap(A)
 
-    if size(A, 1) < 500 # handle small input
+    if size(A_lap, 1) < 500 # handle small input
         throw(ArgumentError("Input Matrix is Small. Solve Ax=B with A\\b"))
     else # validate input
-        flag, A_ = validateInput!(A)
+        flag, A_lap_ = validateInput!(A_lap)
         if flag == 1
             throw(ArgumentError("Input Matrix Must Be Symmetric!"))
         elseif flag == 2
@@ -120,7 +125,7 @@ function solve_cmg(A::SparseMatrixCSC)
         end
     end
 
-    cmg_!(A, A_)
+    cmg_!(A_lap, A_lap_)
 end
 
 function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
