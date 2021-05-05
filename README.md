@@ -3,7 +3,7 @@
 This package implements the Combinatorial Multigrid Preconditioner *[1]*. The code handles input matrices  that are symmetric diagonally dominant with negative off-diagonal entries, a class of matrices that includes graph Laplacians. 
 
 
-We present a quick example. Lets load a a million sized example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is an adjacency matrix of a graph that occurs in a proprietary application. ```LX``` is the corresponding Laplacian matrix. 
+We present a quick example. Lets load a fairly large example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is an adjacency matrix. ```LX``` is the corresponding Laplacian matrix. 
 
 ```
 ## load example matrix
