@@ -1,9 +1,9 @@
 
 # CombinatorialMultigrid.jl
-This package implements the Combinatorial Multigrid Preconditioner. Refer to *[1]* for details on the algorithm. 
+This package implements the Combinatorial Multigrid Preconditioner *[1]*. The code handles input matrices  that are symmetric diagonally dominant with negative off-diagonal entries, a class of matrices that includes graph Laplacians. 
 
 
-In order to run CMG we present a quick example. Lets load a ```1.2M x 1.2M```  sized example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is derived from a proprietary hypergraph. 
+We present a quick example. Lets load a a million sized example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is an adjacency matrix of a graph that occurs in a proprietary application. ```LX``` is the corresponding Laplacian matrix. 
 
 ```
 ## load example matrix
@@ -12,8 +12,7 @@ LX = lap(X);
 b = rand(Float64, size(X, 1));
 b = b .- sum(b)/length(b);
 ```
-CMG needs to be built before solving a linear system. To build CMG we provide two wrapper functions: ```cmg_preconditioner_lap```, which requires the user to provide the laplacian matrix and ```cmg_preconditioner_adj``` which requires the user to provide the adjacent matrix. 
-We run the following script:
+CMG outputs a preconditioner function that can be used to solve a linear system in the input system. This is done here:
 
 ```
 t = @elapsed (pfunc, h) = cmg_preconditioner_lap(LX);
@@ -21,7 +20,13 @@ t = @elapsed (pfunc, h) = cmg_preconditioner_lap(LX);
 t = @elapsed x = pfunc(b);
 @info "Time Required to find x: $(t) seconds"
 ```
-Both ```cmg_preconditioner_lap``` and ```cmg_preconditioner_adj``` returns two parameters: the solver function and the hierarchy.
+
+The second output ```h``` is a hierarchy of graphs that is implicitly used in ```pfunc``` and it is exposed for its potential other applications. Alternatively, one can bypass the computation of the Laplacian matrix as follows:
+
+```
+(pfunc, h) = cmg_preconditioner_adj(X);
+```
+
 The above script generates the following output: 
 ```
 [ Info: Time Required to build CMG Solver: 3.258120718 seconds
@@ -57,7 +62,7 @@ PCG stopped after: 10.288 seconds and 26 iterations with relative error 9.697886
 [ Info: Time Required to find x: 12.226966502 seconds
 ```
 
-```CMG``` builds the solver in ```3.26 seconds``` compared to ```26.31 seconds``` with ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```. When we run ```pcg``` using the two solvers as preconditioners, we find ```cmg``` yields better performance compared to ```approxchol_lap``` by solving the linear system in ```7.8 seconds``` and ```10.29 seconds``` respectively. 
+```CMG``` builds the preconditioner in ```3.26 seconds``` compared to ```26.31 seconds``` with ```approxchol_lap```. Solving the system system takes ```7.8seconds``` with ```cmg```and ```10.29 seconds``` with ```approxchol_lap```.
 
 
 **Citations:**
