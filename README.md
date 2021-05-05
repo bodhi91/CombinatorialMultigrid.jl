@@ -3,13 +3,9 @@
 Implements the Combinatorial Multigrid Preconditioner
 
 
+In order to run CMG we present a quick example. Lets load an example matrix and build the ```b``` side. 
 
 ```
-using Test; using Laplacians; using MAT; using LinearAlgebra; using BenchmarkTools
-include("../src/CombinatorialMultigrid.jl");
-
-using Main.CombinatorialMultigrid
-
 ## load example matrix
 
 X = wtedChimera(100_000);
