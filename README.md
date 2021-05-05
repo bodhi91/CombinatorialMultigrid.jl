@@ -3,7 +3,7 @@
 This package implements the Combinatorial Multigrid Preconditioner. Refer to *[1]* for details on the algorithm. 
 
 
-In order to run CMG we present a quick example. Lets load a a million sized example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is derived from a proprietary hypergraph. 
+In order to run CMG we present a quick example. Lets load a ```1.2M x 1.2M```  sized example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is derived from a proprietary hypergraph. 
 
 ```
 ## load example matrix
