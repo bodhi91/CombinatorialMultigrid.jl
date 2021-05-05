@@ -1,6 +1,6 @@
 
 # CombinatorialMultigrid.jl
-This package implements the Combinatorial Multigrid Preconditioner. Refer to [1] for details on the algorithm. 
+This package implements the Combinatorial Multigrid Preconditioner. Refer to *[1]* for details on the algorithm. 
 
 
 In order to run CMG we present a quick example. Lets load a 1Mx1M example matrix ```X``` and build the ```b``` side. 
