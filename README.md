@@ -13,7 +13,8 @@ LX = lap(X);
 b = rand(Float64, size(X, 1));
 b = b .- sum(b)/length(b);
 ```
-CMG needs to be built before solving a linear system. To build CMG we provide two wrapper functions: ```cmg_preconditioner_lap``` and ```cmg_preconditioner_adj```.
+CMG needs to be built before solving a linear system. To build CMG we provide two wrapper functions: ```cmg_preconditioner_lap```, which requires the user to provide the laplacian matrix and ```cmg_preconditioner_adj``` which requires the user to provide the adjacent matrix. 
+
 ```
 ## build cmg preconditioner 
 t = @elapsed (pfunc, h) = cmg_preconditioner_lap(LX);
