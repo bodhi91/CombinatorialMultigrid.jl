@@ -62,7 +62,7 @@ PCG stopped after: 10.288 seconds and 26 iterations with relative error 9.697886
 [ Info: Time Required to find x: 12.226966502 seconds
 ```
 
-```CMG``` builds the preconditioner in ```3.26 seconds``` compared to ```26.31 seconds``` with ```approxchol_lap```. Solving the system system takes ```7.8seconds``` with ```cmg```and ```10.29 seconds``` with ```approxchol_lap```.
+```CMG``` builds the preconditioner in ```3.26 seconds``` compared to ```26.31 seconds``` with ```approxchol_lap```. Solving the system system takes ```7.8 seconds``` with ```cmg```and ```10.29 seconds``` with ```approxchol_lap```.
 
 
 **Citations:**
