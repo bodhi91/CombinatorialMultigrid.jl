@@ -41,18 +41,23 @@ PCG stopped after: 7.828 seconds and 29 iterations with relative error 8.4293201
 
 For comparison we run ```approxchol_lap``` which is the fastest solver from the ```Laplacians``` package. We run the following script: 
 ```
-solver = approxchol_lap(X; tol=1e-6, maxits=1000, maxtime=Inf, verbose=false, pcgIts=Int[], params=ApproxCholParams());
+solver = approxchol_lap(X; tol=1e-6, maxits=1000, maxtime=Inf, verbose=true, pcgIts=Int[], params=ApproxCholParams());
 @info "Time Required to build Lap Solver: $(t) seconds"
 t = @elapsed x = solver(b);
 @info "Time Required to find x: $(t) seconds"
 ```
 This generates the following output: 
 ```
-[ Info: Time Required to build Lap Solver: 30.104803977 seconds
+Using greedy degree ordering. Factorization time: 25.985280990600586
+Ratio of operator edges to original edges: 4.548086602013639
+ratio of max to min diagonal of laplacian : 583453.0510646806
+Solver build time: 26.293 seconds.
+[ Info: Time Required to build Lap Solver: 26.304803977 seconds
+PCG stopped after: 10.288 seconds and 26 iterations with relative error 9.697886904926194e-7.
 [ Info: Time Required to find x: 12.226966502 seconds
 ```
 
-```CMG``` builds the solver in ```3.26 seconds``` compared to ```30 seconds``` with ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```.
+```CMG``` builds the solver in ```3.26 seconds``` compared to ```30 seconds``` with ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```. When we run ```pcg``` using the two solvers as preconditioners, we find ```cmg``` yields better performance compared to ```approxchol_lap``` by solving the linear system in 7.8 seconds and 10.29 seconds respectively. 
 
 
 **Citations:**
