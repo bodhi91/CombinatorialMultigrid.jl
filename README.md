@@ -55,4 +55,5 @@ This generates the following output:
 ```CMG``` builds the solver in ```3.26 seconds``` compared to ```30 seconds``` with ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```.
 
 
+#Citations:
 [1] Ioannis Koutis, Gary L. Miller, David Tolliver, Combinatorial preconditioners and multilevel solvers for problems in computer vision and image processing, Computer Vision and Image Understanding, Volume 115, Issue 12, 2011, Pages 1638-1646, ISSN 1077-3142, https://doi.org/10.1016/j.cviu.2011.05.013.
