@@ -57,7 +57,7 @@ PCG stopped after: 10.288 seconds and 26 iterations with relative error 9.697886
 [ Info: Time Required to find x: 12.226966502 seconds
 ```
 
-```CMG``` builds the solver in ```3.26 seconds``` compared to ```30 seconds``` with ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```. When we run ```pcg``` using the two solvers as preconditioners, we find ```cmg``` yields better performance compared to ```approxchol_lap``` by solving the linear system in 7.8 seconds and 10.29 seconds respectively. 
+```CMG``` builds the solver in ```3.26 seconds``` compared to ```26.31 seconds``` with ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```. When we run ```pcg``` using the two solvers as preconditioners, we find ```cmg``` yields better performance compared to ```approxchol_lap``` by solving the linear system in 7.8 seconds and 10.29 seconds respectively. 
 
 
 **Citations:**
