@@ -18,7 +18,7 @@ CMG outputs a preconditioner function that can be used to solve a linear system 
 t = @elapsed (pfunc, h) = cmg_preconditioner_lap(LX);
 @info "Time Required to build CMG Solver: $(t) seconds"
 t = @elapsed x = pfunc(b);
-@info "Time Required to find x: $(t) seconds"
+@info "Runtime for preconditioner $(t) seconds"
 ```
 
 The second output ```h``` is a hierarchy of graphs that is implicitly used in ```pfunc``` and it is exposed for its potential other applications. Alternatively, one can bypass the computation of the Laplacian matrix as follows:
