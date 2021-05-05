@@ -3,12 +3,11 @@
 Implements the Combinatorial Multigrid Preconditioner
 
 
-In order to run CMG we present a quick example. Lets load an example matrix ```X``` and build the ```b``` side. 
+In order to run CMG we present a quick example. Lets load a 1Mx1M example matrix ```X``` and build the ```b``` side. 
 
 ```
 ## load example matrix
-
-X = wtedChimera(100_000);
+file = matopen("../example/X.mat"); X = read(file, "X"); close(file)
 LX = lap(X);
 b = rand(Float64, size(X, 1));
 b = b .- sum(b)/length(b);
@@ -22,20 +21,35 @@ t = @elapsed (pfunc, h) = cmg_preconditioner_lap(LX);
 t = @elapsed x = pfunc(b);
 @info "Time Required to find x: $(t) seconds"
 ```
+Both ```cmg_preconditioner_lap``` and ```cmg_preconditioner_adj``` returns two parameters: the solver function and the hierarchy.
+The above script generates the following output: 
+```
+[ Info: Time Required to build CMG Solver: 3.258120718 seconds
+[ Info: Time Required to find x: 0.194163587 seconds
+```
+We try to solve a linear system using CMG. For this purpose we leverage ```pcg``` from the ```Laplacians``` package. We run the following script: 
+```
+f = pcgSolver(LX,pfunc);
+t = @elapsed x = f(b, maxits=40, tol=1e-6,verbose=true);
+@info "Time Required to solve system: $(t) seconds"
+```
 This generates the following output: 
 ```
-[ Info: Time Required to build CMG Solver: 3.758120718 seconds
-[ Info: Time Required to find x: 0.284163587 seconds
+PCG stopped after: 7.828 seconds and 29 iterations with relative error 8.429320186485909e-7.
+[ Info: Time Required to solve system: 8.034237971 seconds
 ```
 
-## solve with pcg and cmg preconditioner
-f1 = pcgSolver(LX,pfunc);
-t = @elapsed x = f1(b, maxits=40, tol=1e-6,verbose=true);
-@info "Time Required to solve system: $(t) seconds"
-
-## solve with approxchol_lap from laplacians
+For comparison we run ```approxchol_lap``` which is the fastest solver from the ```Laplacians``` package. We run the following script: 
+```
 solver = approxchol_lap(X; tol=1e-6, maxits=1000, maxtime=Inf, verbose=false, pcgIts=Int[], params=ApproxCholParams());
 @info "Time Required to build Lap Solver: $(t) seconds"
 t = @elapsed x = solver(b);
 @info "Time Required to find x: $(t) seconds"
 ```
+This generates the following output: 
+```
+[ Info: Time Required to build Lap Solver: 30.104803977 seconds
+[ Info: Time Required to find x: 12.226966502 seconds
+```
+
+```CMG``` builds the solver in ```3.26 seconds``` compared to ```30 seconds``` on ```approxchol_lap``` and solves ```x``` in ```0.19 seconds``` compared to ```12.23 seconds```
