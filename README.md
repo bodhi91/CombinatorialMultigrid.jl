@@ -30,7 +30,7 @@ The second output ```h``` is a hierarchy of graphs that is implicitly used in ``
 The above script generates the following output: 
 ```
 [ Info: Time Required to build CMG Solver: 3.258120718 seconds
-[ Info: Runtime for preconditioner: 0.194163587 seconds
+[ Info: Runtime of preconditioner: 0.194163587 seconds
 ```
 We now solve a linear system using CMG. For this purpose we leverage ```pcg``` from the ```Laplacians``` package. We run the following script: 
 ```
