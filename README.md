@@ -21,7 +21,7 @@ t = @elapsed x = pfunc(b);
 @info "Runtime of preconditioner: $(t) seconds"
 ```
 
-The second output ```h``` is a hierarchy of graphs that is implicitly used in ```pfunc``` and it is exposed for its potential other applications. Alternatively, one can bypass the computation of the Laplacian matrix as follows:
+The second output ```h``` is a hierarchy of graphs that is implicitly used in ```pfunc``` and it is exposed for its potential in other applications. Alternatively, one can bypass the computation of the Laplacian matrix as follows:
 
 ```
 (pfunc, h) = cmg_preconditioner_adj(X);
