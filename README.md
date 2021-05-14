@@ -2,6 +2,11 @@
 # CombinatorialMultigrid.jl
 This package implements the Combinatorial Multigrid Preconditioner *[1]*. The code handles input matrices  that are symmetric diagonally dominant with negative off-diagonal entries, a class of matrices that includes graph Laplacians. 
 
+In order to install the package simply do the following: 
+``` 
+Pkg.add("CombinatorialMultigrid") 
+using CombinatorialMultigrid
+```
 
 We present a quick example. Lets load a fairly large example matrix ```X``` from the ```example``` directory and build the ```b``` side. ```X``` is an adjacency matrix. ```LX``` is the corresponding Laplacian matrix. 
 
