@@ -106,35 +106,27 @@ end
 
 ##
 
-function cmg_preconditioner_lap(A::SparseMatrixCSC)
-  cmg_!(A, A)
-end
-
-function cmg_preconditioner_adj(A::SparseMatrixCSC)
+function cmg_preconditioner_lap(A_lap::SparseMatrixCSC)
   msg = undef
   flag = undef
-  A_lap = lap(A)
 
-  if size(A_lap, 1) < 500 # handle small input
-    throw(ArgumentError("Input Matrix is Small. Solve Ax=B with A\\b"))
-  else # validate input
-    flag, A_lap_ = validateInput!(A_lap)
-    if flag == 1
-      throw(ArgumentError("Input Matrix Must Be Symmetric!"))
-    elseif flag == 2
-      throw(
-        ArgumentError("Current Version of CMG Does Not Support Positive Off-Diagonals!"),
-      )
-    end
+  flag, A_lap_ = validateInput!(A_lap)
+  if flag == 1
+    throw(ArgumentError("Input Matrix Must Be Symmetric!"))
+  elseif flag == 2
+    throw(ArgumentError("Current Version of CMG Does Not Support Positive Off-Diagonals!"))
   end
 
   cmg_!(A_lap, A_lap_)
 end
 
+function cmg_preconditioner_adj(A::SparseMatrixCSC)
+  cmg_preconditioner_lap(lap(A))
+end
+
 function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   A_o = A
   flag = Int64(0)
-  sflag = Int64(0)
   loop = true
   sd = true
   iterative = true
@@ -142,14 +134,8 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   h_nnz = Int64(0)
   n = Int64(0)
   H = Vector{HierarchyLevel}()
-
-  if size(A_, 1) > size(A, 1)
-    sflag = 1
-    sd = true
-  else
-    sflag = 1
-    sd = false
-  end
+  sflag = Int64(1)
+  sd = size(A_, 1) > size(A, 1)
 
   # build up H
   while loop
