@@ -302,7 +302,8 @@ function steiner_group(A::SparseMatrixCSC, dA_::Vector{Float64})
   split_forest_!(C)
   efd = abs.(M ./ dA_)
   if minimum(efd) < 1 / 8 # low effective degree nodes found
-    C = update_groups_(A, C, dA_)
+    # TODO(pratyai): Had to disable this because it somehow causes an index-out-of-bounds error.
+    # C = update_groups_(A, C, dA_)
   end
   #return C, efd
   (cI, nc, ~) = forest_components_(C)
