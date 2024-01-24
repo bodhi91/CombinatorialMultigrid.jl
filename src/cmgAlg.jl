@@ -415,11 +415,10 @@ function preconditioner_sd(
   X::Vector{LevelAux},
   W::Vector{Workspace},
 )
-  n = length(b)
-  push!(b, -sum(b))
-  x = b -> preconditioner_i(H, W, X, b)
-  x = x[1:n] + x[n+1]
-  return x
+  local n = length(b)
+  local bt = [b; -sum(b)]
+  local x = preconditioner_i(H, W, X, bt)
+  return x[1:n] .- x[n+1]
 end
 
 """
