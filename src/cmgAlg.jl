@@ -141,11 +141,6 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   while loop
     iterative = true
     n = size(A_, 1)
-    # direct method for small size
-    if (n < 500)
-      iterative = false
-      break
-    end
     dA_ = Array(diag(A_))
     (cI, ~) = steiner_group(A_, dA_)
     nc = maximum(cI)
