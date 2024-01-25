@@ -118,47 +118,34 @@ function cmg_preconditioner_adj(A::SparseMatrixCSC)
 end
 
 function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
-  A_o = A
-  flag = Int64(0)
-  sd = true
-  j = Int64(0)
-  h_nnz = Int64(0)
-  n = Int64(0)
-  H = Vector{HierarchyLevel}()
+  local original_nnz = nnz(A)
+  local H = Vector{HierarchyLevel}()
   local sflag::Bool = true
   local sd::Bool = size(A_, 1) > size(A, 1)
 
   # build up H
+  local h_nnz::Int = 0
   while true
-    n = size(A_, 1)
-    dA_ = Array(diag(A_))
+    local n = size(A_, 1)
+    local dA_ = Array(diag(A_))
     local cI, nc = steiner_group(A_, dA_)
-    islast = false
-    A = A_ # !
-    invD = 1 ./ (2 * dA_) # !
-    R = sparse(cI, 1:n, ones(n), nc, n) # added for efficiency
-
-    if nc == 1
-      islast = true
-      flag = 1
-    end
+    local A = A_ # !
+    local invD = 1 ./ (2 * dA_) # !
 
     # check for hierarchy stagnation for potentially bad reasons
-    h_nnz = h_nnz + nnz(A_)
-    if (nc >= n - 1) || (h_nnz > 5 * nnz(A_o))
-      islast = true
-      flag = 3 # indicates stagnation
+    h_nnz += nnz(A_)
+    if (nc >= n - 1) || (h_nnz > 5 * original_nnz)
       @warn "CMG convergence may be slow due to matrix density. Future versions of CMG will eliminate this problem."
       break
     end
 
-    Rt = sparse(cI, 1:n, 1, nc, n) # ! take out double
-    A_ = (Rt * A) * Rt'
+    local Rt = sparse(cI, 1:n, 1, nc, n) # ! take out double
+    A_ = Rt * A * Rt'
     push!(
       H,
       HierarchyLevel(
         sd = sd,
-        islast = islast,
+        islast = nc == 1,
         iterative = true,
         A = A,
         invD = invD,
@@ -180,33 +167,9 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
     end
   end
 
-  # code for last hierarchy level
-  if flag == 0
-    j += 1
-    B = A_[1:n-1, 1:n-1]
-    ldlt = ldl(B)
-    push!(
-      H,
-      HierarchyLevel(
-        sd = true,
-        islast = true,
-        iterative = false,
-        A = B,
-        invD = Float64[],
-        cI = Int64[],
-        nc = 0,
-        n = n,
-        nnz = nnz(ldlt.L),
-        chol = ldlt,
-      ),
-    )
-  end
-
   X = init_LevelAux(H)
   W = init_Workspace(H)
   M = init_Hierarchy(H)
-
-
   # create precondition function
   local pfunc = make_preconditioner(M, W, X)
 
@@ -314,21 +277,21 @@ end
     update groups based on nodes with low effective degree
     # Arguments
     -`A`: Laplacian
+    -`C`: the parent vector of an unimodal tree (roots point to themselves)
 """
 function update_groups_(A::SparseMatrixCSC, C::Vector{Int64}, dA_::Vector{Float64})
-  n = length(C)
-  B = zeros(Float64, n)
-  # B[j] is the total tree weight incident to node j
+  local n = length(C)
+  local B = zeros(Float64, n) # B[j] is the total tree weight incident to node j
+
   @inbounds for i = 1:n
-    if C[i] != i
+    if C[i] != i  # if not root
       B[i] = A[i, C[i]] + B[i]
       B[C[i]] = A[i, C[i]] + B[C[i]]
     end
   end
-  ndx = findall(x -> x > -0.125, B ./ dA_)
-  @inbounds @simd for i = 1:length(ndx)
-    C[ndx[i]] = Int32(ndx[i])
-  end
+  local ndx = findall(x -> x > -1.0 / 8, B ./ dA_)
+  C[ndx] .= ndx  # detach such vertices, making them roots
+
   return C
 end
 
@@ -336,7 +299,7 @@ end
     function[cI, nc, csizes] = forest_components_(C)
     forest components, connected components in unimodal forest
     # Arguments
-    -`C`: unimodal tree
+    -`C`: the parent vector of an unimodal tree (roots point to themselves)
 """
 
 function forest_components_(C::Vector{Int64})
