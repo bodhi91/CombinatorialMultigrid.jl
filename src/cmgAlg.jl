@@ -1,5 +1,5 @@
 ## define structures
-struct lPreconditioner{T}
+Base.@kwdef struct lPreconditioner{T<:Function}
   f::T
   function lPreconditioner(pfunc)
     f = pfunc
@@ -7,7 +7,7 @@ struct lPreconditioner{T}
   end
 end
 
-struct CholT
+Base.@kwdef struct CholT
   ld::SparseMatrixCSC{Float64,Int64}
   ldT::SparseMatrixCSC{Float64,Int64}
   d::Vector{Float64}
@@ -15,7 +15,7 @@ struct CholT
   invp::Vector{Int64}
 end
 
-struct HierarchyLevel
+Base.@kwdef struct HierarchyLevel
   sd::Bool
   islast::Bool
   iterative::Bool
@@ -29,7 +29,7 @@ struct HierarchyLevel
   chol::LDLFactorizations.LDLFactorization{Float64,Int64,Int64,Int64}
 end
 
-struct Hierarchy
+Base.@kwdef struct Hierarchy
   A::SparseMatrixCSC{Float64,Int64}
   invD::Vector{Float64}
   cI::Vector{Int64}
@@ -37,7 +37,7 @@ struct Hierarchy
   chol::LDLFactorizations.LDLFactorization{Float64,Int64,Int64,Int64}
 end
 
-mutable struct LevelAux
+Base.@kwdef mutable struct LevelAux
   fwd::Bool
   rc::Int32
   repeat::Int32
@@ -49,7 +49,7 @@ mutable struct LevelAux
   nc::Int64
 end
 
-struct Workspace
+Base.@kwdef struct Workspace
   x::Vector{Float64}
   b::Vector{Float64}
   tmp::Vector{Float64}
@@ -58,35 +58,44 @@ end
 ## Hierarchy Structures Initialization
 
 function init_LevelAux(H::Vector{HierarchyLevel})
-  n_levels = length(H)
-  LevelAux_ = Vector{LevelAux}(undef, n_levels)
+  local n_levels = length(H)
+  local LevelAux_ = Vector{LevelAux}(undef, n_levels)
 
   @inbounds for j = 1:n_levels
+    local repeat::Int32 = 0
     if j == 1
-      repeat = Int32(1)
+      repeat = 1
     elseif j == n_levels
-      repeat = Int32(0)
+      repeat = 0
     else
-      repeat = Int32(max(floor(nnz(H[j-1].A) / nnz(H[j].A) - 1), 1))
+      repeat = max(floor(nnz(H[j-1].A) / nnz(H[j].A) - 1), 1)
     end
 
-    LevelAux_[j] =
-      LevelAux(true, 1, repeat, H[j].sd, H[j].islast, H[j].iterative, H[j].n, H[j].nc)
+    LevelAux_[j] = LevelAux(
+      fwd = true,
+      rc = 1,
+      repeat = repeat,
+      sd = H[j].sd,
+      islast = H[j].islast,
+      iterative = H[j].iterative,
+      n = H[j].n,
+      nc = H[j].nc,
+    )
   end
 
   return LevelAux_
 end
 
 function init_Workspace(H::Vector{HierarchyLevel})
-  n_levels = length(H)
-  Workspace_ = Vector{Workspace}(undef, n_levels)
+  local n_levels = length(H)
+  local Workspace_ = Vector{Workspace}(undef, n_levels)
 
   @inbounds for j = 1:n_levels
-    n_ = size(H[j].A, 1)
+    local n_ = size(H[j].A, 1)
     if j == n_levels && !H[j].iterative
       n_ = n_ + 1
     end
-    Workspace_[j] = Workspace(zeros(n_), zeros(n_), zeros(n_))
+    Workspace_[j] = Workspace(x = zeros(n_), b = zeros(n_), tmp = zeros(n_))
   end
 
   return Workspace_
@@ -94,22 +103,12 @@ end
 
 
 function init_Hierarchy(H::Vector{HierarchyLevel})
-  n_levels = length(H)
-  Hierarchy_ = Vector{Hierarchy}(undef, n_levels)
-
-  @inbounds for j = 1:n_levels
-    Hierarchy_[j] = Hierarchy(H[j].A, H[j].invD, H[j].cI, H[j].chol)
-  end
-
-  return Hierarchy_
+  return [Hierarchy(A = h.A, invD = h.invD, cI = h.cI, chol = h.chol) for h in H]
 end
 
 ##
 
 function cmg_preconditioner_lap(A_lap::SparseMatrixCSC)
-  msg = undef
-  flag = undef
-
   flag, A_lap_ = validateInput!(A_lap)
   if flag == 1
     throw(ArgumentError("Input Matrix Must Be Symmetric!"))
