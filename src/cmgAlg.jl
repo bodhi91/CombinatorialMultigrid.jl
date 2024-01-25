@@ -120,23 +120,20 @@ end
 function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   A_o = A
   flag = Int64(0)
-  loop = true
   sd = true
-  iterative = true
   j = Int64(0)
   h_nnz = Int64(0)
   n = Int64(0)
   H = Vector{HierarchyLevel}()
-  sflag = Int64(1)
-  sd = size(A_, 1) > size(A, 1)
+  local sflag::Bool = true
+  local sd::Bool = size(A_, 1) > size(A, 1)
 
   # build up H
-  while loop
-    iterative = true
+  while true
     n = size(A_, 1)
     dA_ = Array(diag(A_))
-    (cI, ~) = steiner_group(A_, dA_)
-    nc = maximum(cI)
+    local cI, _ = steiner_group(A_, dA_)
+    local nc = maximum(cI)
     islast = false
     A = A_ # !
     invD = 1 ./ (2 * dA_) # !
@@ -144,7 +141,6 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
 
     if nc == 1
       islast = true
-      iterative = true
       flag = 1
     end
 
@@ -152,7 +148,6 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
     h_nnz = h_nnz + nnz(A_)
     if (nc >= n - 1) || (h_nnz > 5 * nnz(A_o))
       islast = true
-      iterative = true
       flag = 3 # indicates stagnation
       @warn "CMG convergence may be slow due to matrix density. Future versions of CMG will eliminate this problem."
       break
@@ -163,22 +158,22 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
     push!(
       H,
       HierarchyLevel(
-        sd,
-        islast,
-        iterative,
-        A,
-        invD,
-        cI,
-        nc,
-        n,
-        nnz(A),
-        ldl([1.0 0; 0 1.0]),
+        sd = sd,
+        islast = islast,
+        iterative = true,
+        A = A,
+        invD = invD,
+        cI = cI,
+        nc = nc,
+        n = n,
+        nnz = nnz(A),
+        chol = ldl([1.0 0; 0 1.0]),
       ),
     )
 
-    if sflag == 1
+    if sflag
       sd = true
-      sflag = 0
+      sflag = false
     end
 
     if nc == 1
@@ -193,7 +188,18 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
     ldlt = ldl(B)
     push!(
       H,
-      HierarchyLevel(true, true, false, B, Float64[], Int64[], 0, n, nnz(ldlt.L), ldlt),
+      HierarchyLevel(
+        sd = true,
+        islast = true,
+        iterative = false,
+        A = B,
+        invD = Float64[],
+        cI = Int64[],
+        nc = 0,
+        n = n,
+        nnz = nnz(ldlt.L),
+        chol = ldlt,
+      ),
     )
   end
 
@@ -203,7 +209,7 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
 
 
   # create precondition function
-  pfunc = make_preconditioner(M, W, X)
+  local pfunc = make_preconditioner(M, W, X)
 
   return (pfunc, H)
 end
@@ -292,15 +298,16 @@ end
 """
 
 function steiner_group(A::SparseMatrixCSC, dA_::Vector{Float64})
-  (C, M) = findMinSparse(A)
+  local C, M = findMinSparse(A)
   split_forest_!(C)
-  efd = abs.(M ./ dA_)
-  if minimum(efd) < 1 / 8 # low effective degree nodes found
+  local efd = abs.(M ./ dA_)
+  if minimum(efd) < 1.0 / 8 # low effective degree nodes found
     # TODO(pratyai): Had to disable this because it somehow causes an index-out-of-bounds error.
     # C = update_groups_(A, C, dA_)
   end
   #return C, efd
-  (cI, nc, ~) = forest_components_(C)
+  local cI, nc, _ = forest_components_(C)
+  return cI, nc
 end
 
 """
@@ -324,7 +331,7 @@ function update_groups_(A::SparseMatrixCSC, C::Vector{Int64}, dA_::Vector{Float6
     C[ndx[i]] = Int32(ndx[i])
   end
   return C
-end # update_groups_
+end
 
 """
     function[cI, nc, csizes] = forest_components_(C)
@@ -383,16 +390,10 @@ function make_preconditioner(
   H::Vector{Hierarchy},
   W::Vector{Workspace},
   X::Vector{LevelAux},
-)
-  if !X[1].sd
-    pfun = b -> preconditioner_i(H, W, X, b)
-    return pfun
-  end
-
-  if X[1].sd
-    pfun = b -> preconditioner_sd(b, H, X, W)
-    return pfun
-  end
+)::Function
+  local fi = b -> preconditioner_i(H, W, X, b)
+  local fsd = b -> preconditioner_sd(b, H, X, W)
+  return X[1].sd ? fsd : fi
 end
 
 """
