@@ -217,11 +217,12 @@ function findRowSumAndDominance(
   local il = similar(nzval, Int64)
   local jl = similar(nzval, Int64)
   local vl = similar(nzval, Float64)
-  local sumR = zeros(Float64, length(colptr) - 1)
+  local ncols = size(A, 2)
+  local sumR = zeros(Float64, ncols)
 
   s = Int64(1)
   k = Int64(0)
-  @inbounds for i = 1:length(colptr)-1
+  @inbounds for i = 1:ncols
     l = colptr[i+1] - colptr[i]
     t = s + l - 1
     sum = 0
@@ -542,76 +543,38 @@ function split_forest_!(C1::Vector{Int64})
 end # split_forest_
 
 function findMinSparse(A::SparseMatrixCSC)
-  minval = Inf
-  row_ = Int64(0)
-  colptr = A.colptr
-  nzval = A.nzval
-  rowval = A.rowval
-  (~, m) = size(A)
-  n = length(nzval)
-  min_cols = zeros(Int64, m)
-  min_vals = zeros(Float64, m)
+  local colptr = A.colptr
+  local rowval = A.rowval
+  local nzval = A.nzval
+
+  local m = size(A, 2)
+  local min_cols = zeros(Int64, m)
+  local min_vals = zeros(Float64, m)
 
   for i = 1:m
-    r_loc_1 = colptr[i]
-    r_loc_2 = colptr[i+1]
-    size_l = r_loc_2 - r_loc_1
-
-    if size_l == 0
+    local rb, re = colptr[i], colptr[i+1]  # range: [rb, re) in `rowval`
+    if rb == re  # empty range
       continue
     end
-    minval = Inf
-    row_ = 0
 
-    for j = r_loc_1:r_loc_2-1
-      val = nzval[j]
-      row = rowval[j]
+    local minval::Float64, row_::Int64 = Inf, 0
+    for j = rb:(re-1)
+      local val, row = nzval[j], rowval[j]
       if val < minval
-        minval = val
-        row_ = row
+        minval, row_ = val, row
       end
     end
-
-    min_cols[i] = row_
-    min_vals[i] = minval
+    min_cols[i], min_vals[i] = row_, minval
   end
-  return (min_cols, min_vals)
-end
 
-function findSumSparse(A::SparseMatrixCSC)
-  colptr = A.colptr
-  nzval = A.nzval
-  s = 1
-  m = length(colptr) - 1
-  k = 0
-  sumVec = Vector{Float64}(undef, m)
-
-  @inbounds for i = 1:m
-    l = colptr[i+1] - colptr[i]
-    t = s + l - 1
-    if l > 0
-      k += 1
-    end
-    sum = 0.0
-    @simd for j = s:t
-      val = nzval[j]
-      sum += val
-    end
-    sumVec[k] = sum
-    s += l
-  end
-  return sumVec
+  return min_cols, min_vals
 end
 
 
 @inline function interpolate!(x::Vector{Float64}, cI::Vector{Int64}, z::Vector{Float64})
-  @inbounds @simd for i = 1:length(x)
-    x[i] = 0
-  end
-
+  x .= 0.0
   @inbounds @simd for i = 1:length(z)
-    idx = cI[i]
-    x[idx] += z[i]
+    x[cI[i]] += z[i]
   end
 end
 
