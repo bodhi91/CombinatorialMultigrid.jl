@@ -15,7 +15,7 @@ Base.@kwdef struct CholT
   invp::Vector{Int64}
 end
 
-Base.@kwdef struct HierarchyLevel
+Base.@kwdef mutable struct HierarchyLevel
   sd::Bool
   islast::Bool
   iterative::Bool
@@ -127,35 +127,56 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   local h_nnz::Int = 0
   while true
     local n = size(A_, 1)
+    if n < 500  # direct method for small size
+      local B = A_[1:n-1, 1:n-1]
+      local ldlt = ldl(B)
+      push!(
+        H,
+        HierarchyLevel(
+          sd = true,
+          islast = true,
+          iterative = false,
+          A = B,
+          invD = Float64[],
+          cI = Int64[],
+          nc = 0,
+          n = n,
+          nnz = nnz(ldlt.L),
+          chol = ldlt,
+        ),
+      )
+      break
+    end
+
     local dA_ = Array(diag(A_))
     local cI, nc = steiner_group(A_, dA_)
     local A = A_ # !
     local invD = 1 ./ (2 * dA_) # !
 
+    local hl = HierarchyLevel(
+      sd = sd,
+      islast = nc == 1,
+      iterative = true,
+      A = A,
+      invD = invD,
+      cI = cI,
+      nc = nc,
+      n = n,
+      nnz = nnz(A),
+      chol = ldl([1.0 0; 0 1.0]),
+    )
     # check for hierarchy stagnation for potentially bad reasons
     h_nnz += nnz(A_)
-    if (nc >= n - 1) || (h_nnz > 5 * original_nnz)
+    if (nc >= n - 1) || (h_nnz > 5 * original_nnz)  # stop, but keep the solver iterative
       @warn "CMG convergence may be slow due to matrix density. Future versions of CMG will eliminate this problem."
+      hl.sd, hl.islast, hl.iterative = true, true, true
+      push!(H, hl)
       break
     end
 
     local Rt = sparse(cI, 1:n, 1, nc, n) # ! take out double
     A_ = Rt * A * Rt'
-    push!(
-      H,
-      HierarchyLevel(
-        sd = sd,
-        islast = nc == 1,
-        iterative = true,
-        A = A,
-        invD = invD,
-        cI = cI,
-        nc = nc,
-        n = n,
-        nnz = nnz(A),
-        chol = ldl([1.0 0; 0 1.0]),
-      ),
-    )
+    push!(H, hl)
 
     if sflag
       sd = true
@@ -264,10 +285,8 @@ function steiner_group(A::SparseMatrixCSC, dA_::Vector{Float64})
   split_forest_!(C)
   local efd = abs.(M ./ dA_)
   if minimum(efd) < 1.0 / 8 # low effective degree nodes found
-    # TODO(pratyai): Had to disable this because it somehow causes an index-out-of-bounds error.
-    # C = update_groups_(A, C, dA_)
+    C = update_groups_(A, C, dA_)
   end
-  #return C, efd
   local cI, nc, _ = forest_components_(C)
   return cI, nc
 end
@@ -330,7 +349,7 @@ function forest_components_(C::Vector{Int64})
     cSizes[en] = cSizes[en] + bufferI  # update the subtree size of that terminating node.
   end
 
-  ccI -= 1  #the current value was the next unused one
+  ccI -= 1  # the current value was the next unused one
   cSizes = cSizes[1:ccI]
   return cI, ccI, cSizes
 end
