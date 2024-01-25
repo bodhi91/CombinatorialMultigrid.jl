@@ -31,13 +31,13 @@ t = @elapsed x = f1(b1, maxits = 40, tol = 1e-6, verbose = true);
 ## solve with approxchol_lap from laplacians
 @info "###  Running approxchol_lap    ###"
 t = @elapsed solver = approxchol_lap(
-  X;
-  tol = 1e-6,
-  maxits = 1000,
-  maxtime = Inf,
-  verbose = true,
-  pcgIts = Int[],
-  params = ApproxCholParams(),
+    X;
+    tol = 1e-6,
+    maxits = 1000,
+    maxtime = Inf,
+    verbose = true,
+    pcgIts = Int[],
+    params = ApproxCholParams(),
 );
 @info "Time Required to build Lap Solver: $(t) seconds"
 t = @elapsed x = solver(b1);
