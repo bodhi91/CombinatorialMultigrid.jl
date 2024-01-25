@@ -109,13 +109,7 @@ end
 ##
 
 function cmg_preconditioner_lap(A_lap::SparseMatrixCSC)
-  flag, A_lap_ = validateInput!(A_lap)
-  if flag == 1
-    throw(ArgumentError("Input Matrix Must Be Symmetric!"))
-  elseif flag == 2
-    throw(ArgumentError("Current Version of CMG Does Not Support Positive Off-Diagonals!"))
-  end
-
+  local A_lap_ = validateInput!(A_lap)  # throws if not valid
   cmg_!(A_lap, A_lap_)
 end
 
@@ -252,21 +246,22 @@ function findRowSumAndDominance(A::SparseMatrixCSC)
   return sumR, flag, il, jl, vl
 end
 
-function validateInput!(A::SparseMatrixCSC)
-  flag = Int64(0)
+function validateInput!(A::SparseMatrixCSC)::SparseMatrixCSC
   # check symmetry
   if !issymmetric(A)
-    return 1, A
+    throw(ArgumentError("Input Matrix Must Be Symmetric!"))
+    return A
   end
   # detect strict dominance && positive off diagonals
-  n = size(A, 1)
-  sAp = Vector{Float64}(undef, n)
-  sd = Vector{Int64}(undef, n)
-  dA = diag(A)
-  (sA, flag, i, j, v) = findRowSumAndDominance(A)
+  local n = size(A, 1)
+  local sAp = Vector{Float64}(undef, n)
+  local sd = Vector{Int64}(undef, n)
+  local dA = diag(A)
+  local sA, flag, i, j, v = findRowSumAndDominance(A)
 
   if flag == 2
-    return 2, A
+    throw(ArgumentError("Current Version of CMG Does Not Support Positive Off-Diagonals!"))
+    return A
   end
 
   @inbounds @simd for i = 1:length(sA)
@@ -276,17 +271,17 @@ function validateInput!(A::SparseMatrixCSC)
 
   # augment by extra coordinate if strictly dominant
   if maximum(sd) > 0.0
-    ex_v = -sAp[sd]
-    ex_v_sum = -sum(ex_v)
-    exd = length(ex_v)
-    exd_c = findall(!iszero, sd) #nonzeros(sd) # get coordinates
-    i_ = ones(Int64, exd) * (n + 1)
-    i = vcat(i, i_, exd_c, n + 1)
-    j = vcat(j, exd_c, i_, n + 1)
-    v = vcat(v, ex_v, ex_v, ex_v_sum)
+    local ex_v = -sAp[sd]
+    local ex_v_sum = -sum(ex_v)
+    local exd = length(ex_v)
+    local exd_c = findall(!iszero, sd) #nonzeros(sd) # get coordinates
+    local i_ = ones(Int64, exd) * (n + 1)
+    local i = vcat(i, i_, exd_c, n + 1)
+    local j = vcat(j, exd_c, i_, n + 1)
+    local v = vcat(v, ex_v, ex_v, ex_v_sum)
     A = sparse(i, j, v, n + 1, n + 1)
   end
-  return 3, A
+  return A
 end
 
 """
