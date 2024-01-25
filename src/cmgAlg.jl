@@ -132,8 +132,7 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   while true
     n = size(A_, 1)
     dA_ = Array(diag(A_))
-    local cI, _ = steiner_group(A_, dA_)
-    local nc = maximum(cI)
+    local cI, nc = steiner_group(A_, dA_)
     islast = false
     A = A_ # !
     invD = 1 ./ (2 * dA_) # !
@@ -341,43 +340,34 @@ end
 """
 
 function forest_components_(C::Vector{Int64})
-  n = length(C)
-  cI = zeros(Int64, n)
-  cSizes = zeros(Int64, n)
-  buffer = zeros(Int64, 100)
-  ccI = 1
+  local n = length(C)
+  local cI = zeros(Int64, n)  # the connected component ID for a node
+  local cSizes = zeros(Int64, n)  # the size of a connnected component for an ID
+  local ccI = 1  # the next available connected component ID
 
+  local buffer = zeros(Int64, n)
   @inbounds for j = 1:n
-    bufferI = 1
-    jwalk = j
-    # tree walk
-    while cI[jwalk] == 0
-      cI[jwalk] = ccI
-      buffer[bufferI] = jwalk
+    local bufferI = 1
+    local jwalk = j
+    # tree walk the path toward ancestors
+    while cI[jwalk] == 0  # until we have found an already labeled node (or have reached a root)
+      cI[jwalk] = ccI  # tentatively label the current node with the next available connected component ID
+      buffer[bufferI] = jwalk  # push the current to the ancestry queue
       bufferI = bufferI + 1
-      if bufferI == size(buffer, 1) # for memory efficiency
-        buffer_ = zeros(Int64, min(2 * size(buffer, 1), n))
-        buffer_[1:size(buffer, 1)] = buffer
-        buffer = buffer_
-      end
-      jwalk = C[jwalk]
-    end # while
-
-    bufferI = bufferI - 1
-    en = C[jwalk] # end node
-    if cI[en] != ccI
-      @simd for i = 1:bufferI
-        cI[buffer[i]] = cI[en]
-      end
-    else
-      ccI = ccI + 1
+      jwalk = C[jwalk]  # move to the parent
     end
-    cSizes[en] = cSizes[en] + bufferI
-  end # for
-  if cSizes[ccI] == 0
-    ccI = ccI - 1
+    bufferI = bufferI - 1  # and we want an inclusive range
+    local en = C[jwalk] # end node
+
+    if cI[en] != ccI  # if our tentative labeling was wrong
+      cI[buffer[1:bufferI]] .= cI[en]  # then fix those mislabelings
+    else
+      ccI = ccI + 1  # otherwise, make a new connected component ID available
+    end
+    cSizes[en] = cSizes[en] + bufferI  # update the subtree size of that terminating node.
   end
 
+  ccI -= 1  #the current value was the next unused one
   cSizes = cSizes[1:ccI]
   return cI, ccI, cSizes
 end
