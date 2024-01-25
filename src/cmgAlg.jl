@@ -208,19 +208,19 @@ function cmg_!(A::T, A_::T) where {T<:SparseMatrixCSC}
   return (pfunc, H)
 end
 
-function findRowSumAndDominance(A::SparseMatrixCSC)
-  colptr::Vector{Int64} = A.colptr
-  nzval::Vector = A.nzval
-  rowval::Vector = A.rowval
-  n = length(nzval)
-  s = Int64(1)
-  flag = Int64(0)
-  k = Int64(0)
-  il = Vector{Int64}(undef, n)
-  jl = Vector{Int64}(undef, n)
-  vl = Vector{Float64}(undef, n)
-  sumR = zeros(Float64, length(colptr) - 1)
+function findRowSumAndDominance(
+  A::SparseMatrixCSC,
+)::Union{Nothing,Tuple{Vector{Float64},Vector{Int64},Vector{Int64},Vector{Float64}}}
+  local colptr::Vector{Int64} = A.colptr
+  local nzval::Vector = A.nzval
+  local rowval::Vector = A.rowval
+  local il = similar(nzval, Int64)
+  local jl = similar(nzval, Int64)
+  local vl = similar(nzval, Float64)
+  local sumR = zeros(Float64, length(colptr) - 1)
 
+  s = Int64(1)
+  k = Int64(0)
   @inbounds for i = 1:length(colptr)-1
     l = colptr[i+1] - colptr[i]
     t = s + l - 1
@@ -233,17 +233,15 @@ function findRowSumAndDominance(A::SparseMatrixCSC)
       il[k] = row
       jl[k] = i
       vl[k] = val
-      if row != i && flag == 0
-        if val > 0
-          flag = 2
-        end
+      if row != i && val > 0
+        return nothing
       end
     end
     sumR[i] = sum
     s += l
   end
 
-  return sumR, flag, il, jl, vl
+  return sumR, il, jl, vl
 end
 
 function validateInput!(A::SparseMatrixCSC)::SparseMatrixCSC
@@ -257,12 +255,13 @@ function validateInput!(A::SparseMatrixCSC)::SparseMatrixCSC
   local sAp = Vector{Float64}(undef, n)
   local sd = Vector{Int64}(undef, n)
   local dA = diag(A)
-  local sA, flag, i, j, v = findRowSumAndDominance(A)
 
-  if flag == 2
+  local res = findRowSumAndDominance(A)
+  if isnothing(res)
     throw(ArgumentError("Current Version of CMG Does Not Support Positive Off-Diagonals!"))
     return A
   end
+  local sA, i, j, v = res
 
   @inbounds @simd for i = 1:length(sA)
     sAp[i] = (sA[i] + abs(sA[i])) / 2
